@@ -1,0 +1,7 @@
+[project]
+name = "cactus-eye"
+version = "0.1.0"
+description = "Vehicle Object Detection from AZ511 traffic cameras and accompanying API"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = []
