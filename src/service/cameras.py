@@ -1,9 +1,12 @@
 import requests
 import os
 import cv2
-from datetime import datetime
+import json
+from datetime import datetime, timezone
+from typing import List
 import numpy as np
 from dotenv import load_dotenv
+from src.service.data_models import CameraDetails
 
 load_dotenv()
 
@@ -11,8 +14,7 @@ load_dotenv()
 class CameraHandler:
     def __init__(self):
         self.api_key = os.getenv("AZ511_API_KEY")
-        self.previous_content = b""
-        self.latest_content = b""
+        self.api_url = "https://az511.com/api/v2/get/cameras"
 
     def _save_to_dir(self, camera_id, latest_content: bytes):
         # make the dir if not there
@@ -33,30 +35,57 @@ class CameraHandler:
         cv2.waitKey(10)
         # cv2.destroyAllWindows()
 
-    def get_latest_still(self, camera_id, show=False, save=False):
-        # print(f"https://az511.com/map/Cctv/{camera_id}")
-        latest = requests.get(f"https://az511.com/map/Cctv/{camera_id}")
-        if latest is not None:
-            if self.latest_content is not None:
-                # TODO: Check if previous is the same as latest, notify if it
-                # is and don't duplicate save
-                self.previous_content = self.latest_content
-                self.latest_content = latest.content
+    def _map_camera(self, cam: dict) -> List[CameraDetails]:
+        """
+        Takes in a camera and returns a list of CameraDetails objects.
+        """
+        cam_list = []
+        for view in cam["Views"]:
+            cam_list.append(
+                CameraDetails(
+                    view_id=view["Id"],
+                    view_url=view["Url"],
+                    view_status=view["Status"],
+                    view_desc=view["Description"],
+                    base_id=cam["Id"],
+                    source=cam["Source"],
+                    source_id=cam["SourceId"],
+                    roadway=cam["Roadway"],
+                    direction=cam["Direction"],
+                    latitude=cam["Latitude"],
+                    longitude=cam["Longitude"],
+                    location=cam["Location"],
+                    last_updated=datetime.now(timezone.utc).replace(
+                        tzinfo=None
+                    ),
+                )
+            )
+        return cam_list
 
-            if show:
-                self._show(camera_id, self.latest_content)
+    def get_latest_still(self, view_id, url, show=False, save=False) -> bytes:
+        content = requests.get(url).content
+        if show:
+            self._show(view_id, content)
+        if save:
+            self._save_to_dir(view_id, content)
+        return content
 
-            if save:
-                self._save_to_dir(camera_id, self.latest_content)
-
-        return latest
-
-    def get_cameras(self):
+    def get_cameras(self, output: str = "json"):
         # https://www.az511.com/help/endpoint/cameras?{self.api_key}
-        results = requests.get(
-            f"https://www.az511.com/help/endpoint/cameras?{self.api_key}"
-        )
-        return results
+        results = requests.get(f"{self.api_url}/?key={self.api_key}")
+        cameras_json = json.loads(results.content)
+        if results.status_code == 200:
+            if output == "json":
+                return cameras_json
+            elif output == "object_list":
+                cam_list = []
+                for cam in cameras_json:
+                    cam_list.extend(self._map_camera(cam))
+                return cam_list
+            else:
+                raise ValueError(
+                    "Argument output must be one of: 'json' or 'object_list'"
+                )
 
-    def get_available_camearas(self):
+    def get_available_cameras(self):
         pass

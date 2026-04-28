@@ -22,4 +22,10 @@ I want to understand object detection ML models and how to build them. Namely, t
 
 - Built API to fetch images to build dataset (FastAPI)
 - Used pretrained model to generate label files for training
-  - My goal is to learn the inner workings of object detection, less so to label images.
+    - My goal is to learn the inner workings of object detection, less so to label images.
+
+# Architecture
+
+- Database
+    - DuckDB
+    - Chose to use as I haven't used this before and it plays well with pandas

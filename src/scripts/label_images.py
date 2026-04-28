@@ -8,9 +8,10 @@ Later, it may be interesting to compare my model to the model
 I use here for labeling.
 """
 
+from pathlib import Path
+
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
-from pathlib import Path
 
 
 class Processor:

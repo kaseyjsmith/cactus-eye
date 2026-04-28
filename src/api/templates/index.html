@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cactus Eye — Cameras</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        padding: 2rem;
+        max-width: 960px;
+        margin: auto;
+      }
+      h1 {
+        margin-top: 0;
+      }
+      select {
+        font-size: 1rem;
+        padding: 0.4rem;
+        width: 100%;
+        max-width: 500px;
+      }
+      #camera-image {
+        display: block;
+        margin-top: 1rem;
+        max-width: 100%;
+        border: 1px solid #ccc;
+        background: #f6f6f6;
+        min-height: 200px;
+      }
+      #status {
+        color: #666;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>AZ511 Cameras</h1>
+    <select id="camera-select">
+      <option value="">Loading cameras…</option>
+    </select>
+    <button id="refresh-btn" disabled>Refresh</button>
+    <div id="status"></div>
+    <img id="camera-image" alt="Select a camera to view its latest still" />
+    <script>
+      const select = document.getElementById("camera-select");
+      const img = document.getElementById("camera-image");
+      const status = document.getElementById("status");
+      const refreshBtn = document.getElementById("refresh-btn");
+
+      function loadImage() {
+        if (!select.value) {
+          img.removeAttribute("src");
+          refreshBtn.disabled = true;
+          return;
+        }
+        img.src = `/${select.value}/latest?t=${Date.now()}`;
+        refreshBtn.disabled = false;
+      }
+
+      fetch("/cameras")
+        .then((r) => r.json())
+        .then((cameras) => {
+          select.innerHTML = '<option value="">Select a camera…</option>';
+          for (const c of cameras) {
+            const opt = document.createElement("option");
+            opt.value = c.view_id;
+            opt.textContent = `${c.location} (${c.view_id})`;
+            select.appendChild(opt);
+          }
+          status.textContent = `${cameras.length} cameras loaded`;
+        })
+        .catch((err) => {
+          status.textContent = `Failed to load cameras: ${err}`;
+        });
+
+      select.addEventListener("change", loadImage);
+      refreshBtn.addEventListener("click", loadImage);
+    </script>
+  </body>
+</html>

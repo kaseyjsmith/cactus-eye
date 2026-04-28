@@ -1,0 +1,4 @@
+- [ ] Create database of cameras
+    - [x] Create CameraDetails dataclass
+    - [x] Modify get_cameras() to fetch all cameras and return as CameraDetails
+    - [x] Update Makefile to setup database(s)

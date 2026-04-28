@@ -39,6 +39,7 @@ def register_hooks(model_sequential, layer_indices: list[int]):
     def make_hook(name):
         def hook(module, input, output):
             activations[name] = output.detach()
+
         return hook
 
     for idx in layer_indices:
@@ -58,7 +59,8 @@ def plot_feature_maps(activations: dict, num_maps: int = 8):
     """
     num_layers = len(activations)
     fig, axes = plt.subplots(
-        num_layers, num_maps + 1,
+        num_layers,
+        num_maps + 1,
         figsize=(2.5 * (num_maps + 1), 3 * num_layers),
     )
     if num_layers == 1:
@@ -72,7 +74,9 @@ def plot_feature_maps(activations: dict, num_maps: int = 8):
 
         # first column: mean across all channels (overall activation)
         axes[row][0].imshow(feat.mean(dim=0).cpu(), cmap="viridis")
-        axes[row][0].set_title(f"{name}\n{num_channels}ch @ {spatial}\n(mean)", fontsize=8)
+        axes[row][0].set_title(
+            f"{name}\n{num_channels}ch @ {spatial}\n(mean)", fontsize=8
+        )
         axes[row][0].axis("off")
 
         # remaining columns: individual feature maps
@@ -123,10 +127,12 @@ def main():
 
     # Preprocess image the same way the model expects
     img = Image.open(img_path).convert("RGB")
-    transform = T.Compose([
-        T.Resize((640, 640)),
-        T.ToTensor(),
-    ])
+    transform = T.Compose(
+        [
+            T.Resize((640, 640)),
+            T.ToTensor(),
+        ]
+    )
     tensor = transform(img).unsqueeze(0)  # add batch dim
 
     # Forward pass through backbone only (layers 0-9), capturing activations
