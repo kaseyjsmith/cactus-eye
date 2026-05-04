@@ -41,12 +41,14 @@
     </select>
     <button id="refresh-btn" disabled>Refresh</button>
     <div id="status"></div>
+    <button id="predict-btn" disabled>Predict!</button>
     <img id="camera-image" alt="Select a camera to view its latest still" />
     <script>
       const select = document.getElementById("camera-select");
       const img = document.getElementById("camera-image");
       const status = document.getElementById("status");
       const refreshBtn = document.getElementById("refresh-btn");
+      const predictBtn = document.getElementById("predict-btn");
 
       function loadImage() {
         if (!select.value) {
@@ -56,6 +58,20 @@
         }
         img.src = `/${select.value}/latest?t=${Date.now()}`;
         refreshBtn.disabled = false;
+        predictBtn.disabled = false;
+      }
+
+      function getPrediction() {
+        if (!select.value) {
+          img.removeAttribute("src");
+          predictBtn.disabled = true;
+          return;
+        }
+        // Date.now() required to make sure prediction image isn't returning
+        // from browser cache
+        img.src = `/predict/${select.value}?t=${Date.now()}`;
+        refreshBtn.disabled = false;
+        predictBtn.disabled = false;
       }
 
       fetch("/cameras")
@@ -76,6 +92,7 @@
 
       select.addEventListener("change", loadImage);
       refreshBtn.addEventListener("click", loadImage);
+      predictBtn.addEventListener("click", getPrediction);
     </script>
   </body>
 </html>
