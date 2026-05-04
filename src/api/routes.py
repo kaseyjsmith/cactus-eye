@@ -4,13 +4,15 @@ from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.requests import Request
 from fastapi.responses import FileResponse, StreamingResponse
 
 from src.service.camera_sync import sync_cameras
 from src.service.cameras import CameraHandler
 from src.service.database import DatabaseManager
+from src.service.errors import check_url
+from src.ml.predict import get_prediction
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
@@ -71,13 +73,15 @@ async def get_available_cameras():
 
 @app.get("/{view_id}/latest")
 async def get_latest_still(view_id: int):
-    url = db.get_view_url(view_id)
-    if url is None:
-        raise HTTPException(
-            status_code=404, detail=f"Camera view {view_id} not found"
-        )
-    content = handler.get_latest_still(view_id, url)
+    content = get_latest_still_helper(view_id)
     logger.info(f"Got latest still from view id: {view_id}")
+    return StreamingResponse(BytesIO(content), media_type="image/jpeg")
+
+
+@app.get("/predict/{view_id}")
+async def predict(view_id):
+    content = get_prediction(get_latest_still_helper(view_id))
+    logger.info(f"Got prediction on latest still from view id: {view_id}")
     return StreamingResponse(BytesIO(content), media_type="image/jpeg")
 
 
@@ -87,3 +91,10 @@ async def save_image(camera_id: str, request: Request):
     file = handler._save_to_dir(camera_id, content)
     logger.info(f"Saved posted image to: {file}")
     return {"status": "saved", "camera_id": camera_id, "file": file}
+
+
+##========HELPERS
+def get_latest_still_helper(view_id):
+    url = db.get_view_url(view_id)
+    check_url(url)
+    return handler.get_latest_still(view_id, url)
